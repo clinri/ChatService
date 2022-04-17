@@ -1,6 +1,6 @@
 package ru.netology.data
 
 data class Message(
-    val id : Int,
+    val idMessage: Int,
     val idChat: Int
 )
