@@ -1,7 +1,7 @@
 # Мини-проект - Chat Service
 ## Data классы
 >### Chat (свойства):
-1. id: Int
+1. idChat: Int
 2. noteId: Int
 3. message: String
 4. date: Long

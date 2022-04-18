@@ -1,6 +1,9 @@
 package ru.netology.service
 
+import ru.netology.data.Chat
+
 object ChatsService {
+    private val chats = mutableListOf<Chat>()
 
     /**     Chat (CRUD)     */
     fun createChat(idUser: Int) {
