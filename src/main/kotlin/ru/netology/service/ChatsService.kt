@@ -10,30 +10,42 @@ object ChatsService {
 
     /**     Chat (CRUD)     */
     /** create не требуется, чат создается при наличии одного сообщения методом sendMessage */
-
+    /** update не требуется */
     /** Количество чатов, в каждом из которых есть хотя бы одно непрочитанное сообщение  */
     fun getUnreadChatsCount(idUser: Int): Int {
-        val chatsWithUnredMessages = mutableListOf<Chat>()
+        var chatsWithUnreadMessages = 0
         chats.filter { chat -> chat.users.contains(idUser) }
-            .forEachIndexed { index, chat ->
-                chat.messages.forEach {
-                    if (it.ownerId != idUser && it.isRead) {
-                        chatsWithUnredMessages += chats[index]
-                        return@forEach
+            .forEach { chat ->
+                chat.messages.forEach forEachMessages@{
+                    //отображать непрочитанными будем чаты если пользователь получатель
+                    if (it.ownerId != idUser && !it.isRead) {
+                        chatsWithUnreadMessages++
+                        return@forEachMessages
                     }
                 }
             }
-        return chatsWithUnredMessages.size
+        return chatsWithUnreadMessages
     }
 
-    /**     Cписок чатов     */
+    /** read Cписок чатов     */
     fun getChats(idUser: Int): List<Chat> {
-        val findedChats = chats.filter { chat -> chat.users.contains(idUser) }
-        if (findedChats.isEmpty()) {
+        val foundChats = chats.filter { chat -> chat.users.contains(idUser) }
+        if (foundChats.isEmpty()) {
             throw NotFoundItemException("нет сообщений")
         } else {
-            return findedChats
+            return foundChats
         }
+    }
+
+    /** delete     */
+    fun deleteChat(idUser: Int, idChat: Int): Boolean {
+        chats.forEachIndexed { index, chat ->
+            if (chat.users.contains(idUser) && chat.idChat == idChat) {
+                chats.removeAt(index)
+                return true
+            }
+        }
+        return false
     }
 
     /**     Message (CRUD)     */
@@ -55,22 +67,28 @@ object ChatsService {
         return newMessageId
     }
 
-    /**
-     * Cписок сообщений
-     * после того, как вызвана данная функция, все отданные сообщения автоматически считаются прочитанными
+    /** read
+     * Cписок сообщений после того, как вызвана данная функция,
+     * все отданные сообщения автоматически считаются прочитанными
      */
     fun getMessages(
+        idUser: Int,
         idChat: Int,
         idOffset: Int = 0, //id последнего сообщения, начиная с которого нужно подгрузить более новые
         count: Int
     ): List<Message> {
         var indexChat: Int = 0
+        //индекс чата
         chats.forEachIndexed { index, chat ->
-            if (chat.idChat == idChat) {
+            if (chat.idChat == idChat && chat.users.contains(idUser)) {
                 indexChat = index
                 return@forEachIndexed
             }
         }
+        if (indexChat == 0) {
+            throw NotFoundItemException("нет сообщений")
+        }
+        //индекс сообщения начиная с которого нужно подгрузить более новые
         var indexOffsetMessage: Int = 0
         if (idOffset != 0) {
             chats[indexChat].messages.forEachIndexed { index, message ->
@@ -79,22 +97,89 @@ object ChatsService {
                 }
             }
         }
-        if (indexChat == 0 || indexOffsetMessage == 0) {
-            throw NotFoundItemException("нет сообщений")
-        }
         // определяем список индексов списка сообщений которые будут отмечаться прочитанными
         val foundIndexMessages = chats[indexChat].messages.subList(indexOffsetMessage, count)
+            // будем отмечать прочитанными только если сообщения адресованы пользователю
+            .filter { message -> message.ownerId != idUser }
             .map { message -> message.idMessage }
         for (i in foundIndexMessages) {
             if (!chats[indexChat].messages[i].isRead) {
                 chats[indexChat].messages[i].isRead = true
             }
         }
-
         return chats[indexChat].messages.subList(indexOffsetMessage, count)
     }
 
-    fun deleteMessage(idUser: Int) {
-
+    /**     delete     */
+    fun deleteMessage(idUser: Int, idMessage: Int): Boolean {
+        var indexChat: Int? = null
+        var sizeMessage: Int = 0
+        // индекс чата
+        chats.forEachIndexed { index, chat ->
+            if (chat.messages.any { message -> message.idMessage == idMessage && chat.users.contains(idUser) }) {
+                indexChat = index
+            }
+            if (indexChat != null) {
+                sizeMessage = chat.messages.size
+            }
+        }
+        return when (sizeMessage) {
+            0 -> false
+            1 -> {
+                chats.removeAt(indexChat!!)
+                true
+            }
+            else -> {
+                val messagesEdit = chats[indexChat!!].messages.filter { message -> message.idMessage != idMessage }
+                chats[indexChat!!] = chats[indexChat!!].copy(messages = messagesEdit)
+                true
+            }
+        }
     }
+
+    /**     update     */
+    fun updateMessage(idUser: Int, idMessage: Int, textMessage: String): Message {
+        var indexChat: Int? = null
+        chats.forEachIndexed { index, chat ->
+            if (chat.messages.any { message -> message.idMessage == idMessage && chat.users.contains(idUser) }) {
+                indexChat = index
+            }
+        }
+        if (indexChat == null) {
+            throw NotFoundItemException("нет такого сообщения")
+        }
+        val messagesEdit = chats[indexChat!!].messages
+        var messageIndex: Int? = null
+        messagesEdit.forEachIndexed { index, message ->
+            // редактируем только свои сообщения
+            if (message.idMessage == idMessage && message.ownerId == idUser) {
+                messageIndex = index
+            }
+        }
+        if (messageIndex == null) {
+            throw NotFoundItemException("нет такого сообщения")
+        }
+        messagesEdit[messageIndex!!].message = textMessage
+        chats[indexChat!!] = chats[indexChat!!].copy(messages = messagesEdit)
+        return messagesEdit[messageIndex!!]
+    }
+
+    fun removeAll(){
+        chats.clear()
+        chatsCount = 1
+    }
+
+    fun createChats(){
+        for (k in 1..5) {
+            for (i in 1..10) {
+                sendMessage(k, 20 + i, "Сообщение от $k про $k")
+                sendMessage(20+i, k, "Сообщение от ${20+i} про $k")
+            }
+        }
+        println("Сообщения отправлены")
+    }
+}
+
+fun main() {
+    ChatsService.createChats()
 }
