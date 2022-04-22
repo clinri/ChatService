@@ -2,31 +2,27 @@
 ## Data классы
 >### Chat (свойства):
 1. idChat: Int
-2. noteId: Int
-3. message: String
-4. date: Long
-5. isDelete: Boolean
+2. users: List<Int>
+3. messages: List<Message>
 >### Message (свойства):
-1. id: Int
-2. noteId: Int
+1. idMessage: Int
+2. ownerId: Int
 3. message: String
-4. date: Long
-5. isDelete: Boolean
+4. isRead: Boolean
 ## Сервис (реализация логики работы с чатами).
 >### ChatsService (свойства)
 - notes: MutableList<Note>
-- noteCount: Int
-- coments: MutableList<Comment>
-- commentCount: Int
+- chatsCount: Int
+- messageCount: Int
 >### ChatsService (методы CRUD для Чатов)
-- add(note: Note): Int
-- get(vararg idNotes: Int, userId: Int, offset: Int = 0, count: Int, sort: Int = 0): MutableList<Note>
-- getById(id: Int, owner_id:Int): Note
-- edit(note: Note): Boolean
-- delete(noteIdDelete: Int): Boolean
->### NoteServiсe (методы CRUD для Сообщений)
-- createComment(comment: Comment): Int
-- getComments(idNote: Int, userId: Int, offset: Int = 0, count: Int, sort: Int = 0): MutableList<Comment>
-- editComment(comment: Comment): Boolean
-- deleteComment(commentId: Int, owner_id: Int) : Int
-- restoreComment(commentId: Int, owner_id: Int): Int
+- getUnreadChatsCount(idUser: Int): Int
+- getChats(idUser: Int): List<Chat>
+- deleteChat(idUser: Int, idChat: Int): Boolean
+>### ChatsServiсe (методы CRUD для Сообщений)
+- sendMessage(userSenderId: Int, userReceiverId: Int, textMessage: String): Int
+- getMessages(idUser: Int, idChat: Int, idOffset: Int = 0, count: Int): List<Message>
+- deleteMessage(idUser: Int, idMessage: Int): Boolean
+- updateMessage(idUser: Int, idMessage: Int, textMessage: String): Message
+>### ChatsServiсe (прочие методы )
+- removeAll()
+- createChats()
