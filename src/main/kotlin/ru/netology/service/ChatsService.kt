@@ -77,7 +77,7 @@ object ChatsService {
         idOffset: Int = 0, //id последнего сообщения, начиная с которого нужно подгрузить более новые
         count: Int
     ): List<Message> {
-        var indexChat: Int = 0
+        var indexChat: Int? = null
         //индекс чата
         chats.forEachIndexed { index, chat ->
             if (chat.idChat == idChat && chat.users.contains(idUser)) {
@@ -85,29 +85,29 @@ object ChatsService {
                 return@forEachIndexed
             }
         }
-        if (indexChat == 0) {
+        if (indexChat == null) {
             throw NotFoundItemException("нет сообщений")
         }
         //индекс сообщения начиная с которого нужно подгрузить более новые
         var indexOffsetMessage: Int = 0
         if (idOffset != 0) {
-            chats[indexChat].messages.forEachIndexed { index, message ->
+            chats[indexChat!!].messages.forEachIndexed { index, message ->
                 if (message.idMessage == idOffset) {
                     indexOffsetMessage = index
                 }
             }
         }
         // определяем список индексов списка сообщений которые будут отмечаться прочитанными
-        val foundIndexMessages = chats[indexChat].messages.subList(indexOffsetMessage, count)
+        val foundIndexMessages = chats[indexChat!!].messages.subList(indexOffsetMessage, count)
             // будем отмечать прочитанными только если сообщения адресованы пользователю
             .filter { message -> message.ownerId != idUser }
             .map { message -> message.idMessage }
         for (i in foundIndexMessages) {
-            if (!chats[indexChat].messages[i].isRead) {
-                chats[indexChat].messages[i].isRead = true
+            if (!chats[indexChat!!].messages[i].isRead) {
+                chats[indexChat!!].messages[i].isRead = true
             }
         }
-        return chats[indexChat].messages.subList(indexOffsetMessage, count)
+        return chats[indexChat!!].messages.subList(indexOffsetMessage, count)
     }
 
     /**     delete     */
@@ -164,16 +164,17 @@ object ChatsService {
         return messagesEdit[messageIndex!!]
     }
 
-    fun removeAll(){
+    fun removeAll() {
         chats.clear()
         chatsCount = 1
+        messageCount = 1
     }
 
-    fun createChats(){
+    fun createChats() {
         for (k in 1..5) {
             for (i in 1..10) {
                 sendMessage(k, 20 + i, "Сообщение от $k про $k")
-                sendMessage(20+i, k, "Сообщение от ${20+i} про $k")
+                sendMessage(20 + i, k, "Сообщение от ${20 + i} про $k")
             }
         }
         println("Сообщения отправлены")
@@ -182,4 +183,8 @@ object ChatsService {
 
 fun main() {
     ChatsService.createChats()
+
+    ChatsService.getMessages(1, 1, 2, 1).forEach { message ->
+        println(message.message)
+    }
 }
