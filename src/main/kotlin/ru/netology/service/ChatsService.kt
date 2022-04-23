@@ -14,7 +14,7 @@ object ChatsService {
     /** Количество чатов, в каждом из которых есть хотя бы одно непрочитанное сообщение  */
     fun getUnreadChatsCount(idUser: Int): Int {
         var chatsWithUnreadMessages = 0
-        chats.filter { chat -> chat.users.contains(idUser) }
+        chats.filter { it.users.contains(idUser) }
             .forEach { chat ->
                 chat.messages.forEach forEachMessages@{
                     //отображать непрочитанными будем чаты если пользователь получатель
@@ -29,7 +29,7 @@ object ChatsService {
 
     /** read Cписок чатов     */
     fun getChats(idUser: Int): List<Chat> {
-        val foundChats = chats.filter { chat -> chat.users.contains(idUser) }
+        val foundChats = chats.filter { it.users.contains(idUser) }
         if (foundChats.isEmpty()) {
             throw NotFoundItemException("нет сообщений")
         } else {
@@ -57,11 +57,11 @@ object ChatsService {
     ): Int {
         val newMessageId = messageCount++
         val message = Message(newMessageId, userSenderId, textMessage)
-        if (chats.none { chat -> chat.users.containsAll(listOf(userSenderId, userReceiverId)) }) {
+        if (chats.none { it.users.containsAll(listOf(userSenderId, userReceiverId)) }) {
             val newChatId = chatsCount++
             chats += Chat(newChatId, listOf(userSenderId, userReceiverId), listOf(message))
         } else {
-            chats.first { chat -> chat.users.containsAll(listOf(userSenderId, userReceiverId)) }
+            chats.first { it.users.containsAll(listOf(userSenderId, userReceiverId)) }
                 .messages += message
         }
         return newMessageId
@@ -100,8 +100,8 @@ object ChatsService {
         // определяем список индексов списка сообщений которые будут отмечаться прочитанными
         val foundIndexMessages = chats[indexChat!!].messages.subList(indexOffsetMessage, count)
             // будем отмечать прочитанными только если сообщения адресованы пользователю
-            .filter { message -> message.ownerId != idUser }
-            .map { message -> message.idMessage }
+            .filter { it.ownerId != idUser }
+            .map { it.idMessage }
         for (i in foundIndexMessages) {
             if (!chats[indexChat!!].messages[i].isRead) {
                 chats[indexChat!!].messages[i].isRead = true
@@ -130,7 +130,7 @@ object ChatsService {
                 true
             }
             else -> {
-                val messagesEdit = chats[indexChat!!].messages.filter { message -> message.idMessage != idMessage }
+                val messagesEdit = chats[indexChat!!].messages.filter { it.idMessage != idMessage }
                 chats[indexChat!!] = chats[indexChat!!].copy(messages = messagesEdit)
                 true
             }
@@ -141,7 +141,7 @@ object ChatsService {
     fun updateMessage(idUser: Int, idMessage: Int, textMessage: String): Message {
         var indexChat: Int? = null
         chats.forEachIndexed { index, chat ->
-            if (chat.messages.any { message -> message.idMessage == idMessage && chat.users.contains(idUser) }) {
+            if (chat.messages.any { it.idMessage == idMessage && chat.users.contains(idUser) }) {
                 indexChat = index
             }
         }
@@ -183,8 +183,5 @@ object ChatsService {
 
 fun main() {
     ChatsService.createChats()
-
-    ChatsService.getMessages(1, 1, 2, 1).forEach { message ->
-        println(message.message)
-    }
+    ChatsService.getMessages(1, 1, 2, 1).forEach { println(it.message) }
 }
