@@ -22,7 +22,7 @@ class ChatsServiceTest {
     }
 
     @Test
-    fun get_chats_whith_messages() {
+    fun get_chats_with_messages() {
         Assert.assertTrue(ChatsService.getChats(1).isNotEmpty())
     }
 
